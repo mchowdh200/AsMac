@@ -86,6 +86,13 @@ class AsMac(nn.Module):
         embed = F.normalize(input=F.relu(embed), p=2, dim=0)
         return embed
 
+    def get_embeddings(self, seq_oh):
+        l = len(seq_oh)
+        embeddings = torch.zeros([l, self.out_dim])
+        for i, seq in enumerate(seq_oh):
+            embeddings[i, :] = self.test_embed(seq)
+        return embeddings
+
     def test_forward(self, seq_oh):
         l = len(seq_oh)
         embeddings = torch.zeros([l, self.out_dim])

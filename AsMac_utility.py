@@ -1,6 +1,4 @@
 import numpy as np
-import matplotlib
-#matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 import random
 random.seed(1)
@@ -8,7 +6,8 @@ import math
 import torch
 torch.set_printoptions(profile="full")
 np.set_printoptions(precision=10)
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, IterableDataset
+from Bio import SeqIO
 
 
 def one_hot(ss):
@@ -45,6 +44,20 @@ class MSELoss(torch.nn.Module):
         # print(MSE)
         return MSE
 
+class SeqIteratorDataset(IterableDataset):
+    """
+    Simple dataset without target lables that transforms
+    a fasta sequence to one hot representation and faciliates
+    batch loading by a torch DataLoader.
+    """
+    def __init__(self, file_path):
+        self.file_path = file_path
+    def __iter__(self):
+        """
+        Use Biopython's fasta iterator
+        """
+        S = SeqIO.parse(self.file_path, "fasta")
+        return ({'id': s.id, 'seq': str(s.seq)} for s in S)
 
 class SeqDataset(Dataset):
 
@@ -93,8 +106,6 @@ class SeqDataset(Dataset):
             dist = np.float64(name.split(' ')[-1])
             if dist == 0:
                 print('here', name)
-#             _ = f_a.readline()
-#             _ = f_a.readline()
             M[ind_1, ind_2] = dist
             M[ind_2, ind_1] = dist
         return M
@@ -116,33 +127,3 @@ class SeqDataset(Dataset):
                 chosen_M[j, i] = self.M[ind1, ind2]
 
         return chosen_seq_list, chosen_M
-
-
-
-def my_plot(x, y, save_fp, ylabel='EINN prediction'):
-    fig, ax = plt.subplots(figsize=(6, 6))
-    ax.tick_params(axis='both', which='major', labelsize=15)
-    # hb = ax.hexbin(x, y, gridsize=200, bins='log', extent=(0, 1, 0, 1))
-    hb = ax.hexbin(x, y, gridsize=200, bins='log', cmap='Blues', extent=(0, 1, 0, 1))
-    ax.plot(np.linspace(0, 1, 100), np.linspace(0, 1, 100), 'r')
-    ax.set_xlabel('alignment distance', fontsize=20)
-    ax.set_ylabel(ylabel, fontsize=20)
-    plt.grid()
-
-    cbar_ax = fig.add_axes([0.95, 0.1, 0.05, 0.8])
-    cbar_ax.tick_params(axis='both', which='major', labelsize=15)
-    cbar = fig.colorbar(hb, cax=cbar_ax)
-    cbar.set_label('log10(count + 1)', fontsize=20)
-    fig.savefig(save_fp, bbox_inches='tight')
-    plt.show()
-    print('plot_saved')
-    plt.close()
-
-
-if __name__ == "__main__":
-
-    seq_fp = 'data/training_seq.fa'
-    dist_fp = 'data/training_dist_prepared.txt'
-    test_data = SeqDataset(seq_fp, dist_fp, 10)
-    print(test_data.M)
-
