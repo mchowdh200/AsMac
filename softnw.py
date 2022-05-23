@@ -2,11 +2,6 @@ import numpy as np
 import torch
 torch.manual_seed(1)
 import torch.nn.functional as F
-import random
-random.seed(1)
-import matplotlib
-#matplotlib.use('TkAgg')
-import matplotlib.pyplot as plt
 from torch.autograd import Function
 from _softnw import softnw_f_fast, softnw_q_fast, softnw_p_fast, softnw_h_fast, seq2_gradient_fast
 
@@ -186,61 +181,3 @@ class SoftNW(Function):
         output[2] = grad_output * torch.FloatTensor([P])
 
         return output[0], output[1], output[2], None
-
-
-if __name__ == "__main__":
-
-    l1 = 100
-    l2 = 120
-    basis = {'A': 0, 'T': 1, 'C': 2, 'G': 3}
-    seq1 = ''.join([random.choice(list(basis.keys())) for _ in range(l1)])
-    print(seq1)
-
-    softnw = SoftNW.apply
-    s1 = torch.FloatTensor(one_hot(seq1))
-    s2 = F.normalize(input=torch.rand([4, l2]), p=2, dim=1).clone().detach().requires_grad_(True)
-
-    g = torch.FloatTensor([1]).clone().detach().requires_grad_(True)
-    print('s2')
-    print(s2)
-    learning_rate = 1e-3
-
-    for ep in range(1000):
-        # print('ep', ep)
-        simi = softnw(s1, s2, g)
-        # print('simi', simi)
-        # loss = (min(l2, l1) - simi).pow(2).sum()
-        loss = -(simi) + 1e2 * torch.pow((1-g[0]), 2)
-        loss.backward()
-
-        print(ep, 'g', g.item(), 'loss', loss.item(), 'regularization', torch.pow((1-g), 2).item())
-        # if loss.item() < 1e-2:
-        #     break
-
-        with torch.no_grad():
-            # print('gradient')
-            # print(s2.grad)
-            s2 -= learning_rate * s2.grad
-            g -= learning_rate * g.grad
-            s2 = F.normalize(input=s2, p=2, dim=0).clone().detach().requires_grad_(True)
-            # print(s2)
-            # Manually zero the gradients after updating weights
-            # s2.grad.zero_()
-        # break
-
-    print('simi', simi)
-    print('s2')
-    print(s2)
-    print('s1')
-    print(s1)
-    print('learnt gap cost', g)
-
-    f, axe = plt.subplots(2, 1)
-    axe[0].imshow(s1.detach().numpy(), cmap='gray')
-    axe[0].title.set_text('s1, length: ' + str(l1))
-    axe[1].imshow(s2.detach().numpy(), cmap='gray')
-    axe[1].title.set_text('s2 learnt, length: ' + str(l2))
-
-    plt.savefig('learn_seq_' + str(l1) + '_' + str(l2) + '.png')
-    #
-
