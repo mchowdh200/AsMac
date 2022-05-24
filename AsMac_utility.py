@@ -1,7 +1,10 @@
-import numpy as np
-import random
-random.seed(1)
+import gzip
 import math
+import random
+from typing import Generator
+random.seed(1)
+
+import numpy as np
 import torch
 torch.set_printoptions(profile="full")
 np.set_printoptions(precision=10)
@@ -12,7 +15,7 @@ from Bio import SeqIO
 def one_hot(ss):
     basis = {'A': 0, 'T': 1, 'C': 2, 'G': 3}
     feature_list = []
-    for j, s in enumerate(ss):
+    for s in ss:
         feature = np.zeros([4, len(s)])
         for i, c in enumerate(s):
             if c not in ['A', 'T', 'G', 'C']:
@@ -43,21 +46,26 @@ class MSELoss(torch.nn.Module):
         # print(MSE)
         return MSE
 
-## TODO
-# Add support for fastq
 class SeqIteratorDataset(IterableDataset):
     """
     Simple dataset without target lables that transforms
-    a fasta sequence to one hot representation and faciliates
+    a fast{a|q} sequence to one hot representation and faciliates
     batch loading by a torch DataLoader.
     """
-    def __init__(self, file_path):
+    def __init__(self, file_path: str, format: str = 'fasta', gzipped: bool = False):
         self.file_path = file_path
+        self.format = format
+        self.gzipped = gzipped
     def __iter__(self):
         """
         Use Biopython's fasta iterator
         """
-        S = SeqIO.parse(self.file_path, "fasta")
+        if self.gzipped:
+            handle = gzip.open(self.file_path, 'rt')
+        else:
+            handle = open(self.file_path, 'r')
+        S = SeqIO.parse(handle, self.format)
+
         return ({'i': i, 'id': s.id, 'seq': str(s.seq)}
                 for i, s in enumerate(S))
 
