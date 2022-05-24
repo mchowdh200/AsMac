@@ -24,6 +24,9 @@ fasta = 'data/test_subset.fa'
 dataset = SeqIteratorDataset(fasta)
 dataloader = DataLoader(dataset=dataset, batch_size=2,)
 index = faiss.IndexFlatL2(embed_dim)
+
+# used to recover sequence ids in fasta after search
+id_map = {}
 with torch.no_grad():
     for records in dataloader:
         # for id in records['id']: # vector of fasta sequence IDs
@@ -36,9 +39,24 @@ with torch.no_grad():
         # add the vectors (rows) to the index
         index.add(embeddings) 
 
-        pprint(index.search(embeddings, 5))
+        for i, id in zip(records['i'], records['id']):
+            id_map[int(i)] = id
 
 ## test nearest neighbor query
-# TODO need to add a dict that associates a fasta sequence record with the
-# integer ID from the FAISS index.
+with torch.no_grad():
+    for records in dataloader:
+        seq_oh = one_hot(records['seq'])
+
+        embeddings =  net.get_embeddings(seq_oh) \
+                         .detach().numpy().astype(np.float32)
+
+        # just do for one vector as a test
+        # the wrapping in a np array is to preserve the structure
+        # of the matrix in the case of one vector queries
+        D, I = index.search(np.array([embeddings[0]]), 4)
+        print(f'{D.shape=}')
+        print(f'{I.shape=}')
+        print(f'{D=}')
+        print(f'{I=}')
+        break
 

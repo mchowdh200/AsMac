@@ -43,6 +43,8 @@ class MSELoss(torch.nn.Module):
         # print(MSE)
         return MSE
 
+## TODO
+# Add support for fastq
 class SeqIteratorDataset(IterableDataset):
     """
     Simple dataset without target lables that transforms
@@ -56,7 +58,8 @@ class SeqIteratorDataset(IterableDataset):
         Use Biopython's fasta iterator
         """
         S = SeqIO.parse(self.file_path, "fasta")
-        return ({'id': s.id, 'seq': str(s.seq)} for s in S)
+        return ({'i': i, 'id': s.id, 'seq': str(s.seq)}
+                for i, s in enumerate(S))
 
 class SeqDataset(Dataset):
 
