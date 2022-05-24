@@ -1,0 +1,12 @@
+name: asmac-test
+channels:
+  - pytorch
+  - bioconda
+dependencies:
+  - python=3.8
+  - cython
+  - pytorch
+  - faiss-cpu
+  - cpuonly
+  - numpy
+  - biopython
