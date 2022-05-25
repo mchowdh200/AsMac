@@ -1,7 +1,8 @@
 import gzip
 import math
+from __future__ import annotations
+
 import random
-from typing import Generator
 random.seed(1)
 
 import numpy as np
@@ -10,7 +11,6 @@ torch.set_printoptions(profile="full")
 np.set_printoptions(precision=10)
 from torch.utils.data import Dataset, IterableDataset
 from Bio import SeqIO
-
 
 def one_hot(ss):
     basis = {'A': 0, 'T': 1, 'C': 2, 'G': 3}
@@ -52,22 +52,27 @@ class SeqIteratorDataset(IterableDataset):
     a fast{a|q} sequence to one hot representation and faciliates
     batch loading by a torch DataLoader.
     """
-    def __init__(self, file_path: str, format: str = 'fasta', gzipped: bool = False):
-        self.file_path = file_path
+    def __init__(self, paths: list[str], format: str = 'fasta', gzipped: bool = False):
+        self.paths = paths
         self.format = format
         self.gzipped = gzipped
     def __iter__(self):
         """
         Use Biopython's fasta iterator
         """
-        if self.gzipped:
-            handle = gzip.open(self.file_path, 'rt')
-        else:
-            handle = open(self.file_path, 'r')
-        S = SeqIO.parse(handle, self.format)
+        # 1. if length of list is 1 do normal stuff
+        # 2. else make a chain of iterators
+        if len(self.paths) < 1:
+            raise ValueError('paths must be a list of 1 or more file paths')
+        i = 0 # used to keep track of seq number an map to seq id
+        for p in self.paths:
+            handle = gzip.open(p, 'rt') if self.gzipped else open(p, 'r')
+            S = SeqIO.parse(handle, format=self.format)
+            for record in S:
+                yield {'index': i, 'id': record.id,
+                       'seq': str(record.seq), 'file': p}
+                i += 1
 
-        return ({'i': i, 'id': s.id, 'seq': str(s.seq)}
-                for i, s in enumerate(S))
 
 class SeqDataset(Dataset):
 
