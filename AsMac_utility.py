@@ -1,6 +1,6 @@
+from __future__ import annotations
 import gzip
 import math
-from __future__ import annotations
 
 import random
 random.seed(1)
