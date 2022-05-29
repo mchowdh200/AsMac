@@ -11,7 +11,7 @@ import torch
 from torch.utils.data import Dataset, IterableDataset, DataLoader
 from Bio import SeqIO
 
-from AsMac_model import AsMac
+from .AsMac_model import AsMac
 
 def load_pretrained(model: str) -> AsMac:
     embed_dim = 300 # number of kernel sequences
