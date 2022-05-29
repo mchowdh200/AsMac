@@ -8,7 +8,6 @@ random.seed(1)
 
 import numpy as np
 import torch
-from sklearn.preprocessing import OneHotEncoder
 from torch.utils.data import Dataset, IterableDataset, DataLoader
 from Bio import SeqIO
 
