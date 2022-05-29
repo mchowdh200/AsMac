@@ -12,7 +12,7 @@ ext_modules=[Extension(
     extra_compile_args=['-ffast-math'])]
 
 setup(
-    name = 'AsMac',
+    name = 'asmac',
     packages=find_packages(exclude=['build', 'CppAlign', 'misc']),
     zip_safe=False,
     cmdclass = {'build_ext': build_ext},
