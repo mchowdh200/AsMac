@@ -11,13 +11,13 @@ import torch
 from torch.utils.data import Dataset, IterableDataset, DataLoader
 from Bio import SeqIO
 
-from .AsMac_model import AsMac
+import AsMac_model
 
-def load_pretrained(model: str) -> AsMac:
+def load_pretrained(model: str) -> AsMac_model.AsMac:
     embed_dim = 300 # number of kernel sequences
     kernel_size = 20 # kernel length
     learning_rate=1e-3 # learning rate
-    net = AsMac(4, embed_dim, kernel_size)
+    net = AsMac_model.AsMac(4, embed_dim, kernel_size)
     net_state_dict = torch.load(model)
     net.load_state_dict(net_state_dict)
     return net
