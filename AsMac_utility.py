@@ -103,13 +103,13 @@ class SeqIteratorDataset(IterableDataset):
                        'seq': self.one_hot(str(record.seq))
                        if self.alphabet else str(record.seq)}
                 i += 1
-def makeDataLoader(seqit: SeqIteratorDataset, batch_size: int=64, num_workers: int=64):
+def makeDataLoader(seqit: SeqIteratorDataset, batch_size: int=64):
     """
     Simple factory for dataloader.
     """
     return DataLoader(seqit, shuffle=False,
                       batch_size=batch_size,
-                      num_workers=num_workers,
+                      num_workers=1
                       collate_fn=lambda x: x)
 
 def formatBatchMetadata(batch: list[dict]) -> list[str]:
