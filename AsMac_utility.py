@@ -109,7 +109,7 @@ def makeDataLoader(seqit: SeqIteratorDataset, batch_size: int=64):
     """
     return DataLoader(seqit, shuffle=False,
                       batch_size=batch_size,
-                      num_workers=1
+                      num_workers=1,
                       collate_fn=lambda x: x)
 
 def formatBatchMetadata(batch: list[dict]) -> list[str]:
