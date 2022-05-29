@@ -86,7 +86,7 @@ class AsMac(nn.Module):
 
             embed = F.normalize(input=F.relu(embed), p=2, dim=0)
         if asnumpy:
-            return embed.detach.numpy().astype(np.float32)
+            return embed.detach().numpy().astype(np.float32)
         return embed
 
     def get_embeddings(self, seq_oh):
