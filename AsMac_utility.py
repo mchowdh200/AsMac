@@ -79,7 +79,7 @@ class SeqIteratorDataset(IterableDataset):
         """
 
         # convert seq to indices (unknown tokens = -1)
-        seq_ind = np.array([self.encoder.get(c, -1) for c in seq])
+        seq_ind = np.array([self.encoder.get(c, -1) for c in seq.upper()])
         encoded = np.zeros((len(self.encoder), len(seq)))
 
         # uknown tokens will be all zeros
