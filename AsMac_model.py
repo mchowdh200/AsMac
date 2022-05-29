@@ -73,7 +73,7 @@ class AsMac(nn.Module):
 
         return embed
 
-    def test_embed(self, seq):
+    def test_embed(self, seq, asnumpy=False):
         with torch.no_grad():
             embed = torch.zeros([self.out_dim])
             for i in range(self.weights.shape[0]):
@@ -85,6 +85,8 @@ class AsMac(nn.Module):
                 embed[i] = entry
 
             embed = F.normalize(input=F.relu(embed), p=2, dim=0)
+        if asnumpy:
+            return embed.detach.numpy().astype(np.float32)
         return embed
 
     def get_embeddings(self, seq_oh):
