@@ -74,19 +74,27 @@ class AsMac(nn.Module):
         return embed
 
     def test_embed(self, seq):
-        embed = torch.zeros([self.out_dim])
-        for i in range(self.weights.shape[0]):
-            weight = self.weights[i, :, :].detach().numpy().astype(np.float64)
-            g = self.gap[i].detach().numpy().astype(np.float64)
-            v = embed_value_fast(seq, weight, gap=g)
-            entry = v + self.bias[i]
+        with torch.no_grad():
+            embed = torch.zeros([self.out_dim])
+            for i in range(self.weights.shape[0]):
+                weight = self.weights[i, :, :].detach().numpy().astype(np.float64)
+                g = self.gap[i].detach().numpy().astype(np.float64)
+                v = embed_value_fast(seq, weight, gap=g)
+                entry = v + self.bias[i]
 
-            embed[i] = entry
+                embed[i] = entry
 
-        embed = F.normalize(input=F.relu(embed), p=2, dim=0)
+            embed = F.normalize(input=F.relu(embed), p=2, dim=0)
         return embed
 
     def get_embeddings(self, seq_oh):
+        """
+        ## NOTE
+        This model was not designed to be used with batch processing
+        (at least not in a performant way).  Without padding sequence
+        you have to resort to for loops.  Even with a gpu, performance
+        will take a hit as a result.
+        """
         l = len(seq_oh)
         embeddings = torch.zeros([l, self.out_dim])
         for i, seq in enumerate(seq_oh):

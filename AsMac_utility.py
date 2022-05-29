@@ -3,17 +3,27 @@ import gzip
 import math
 
 import random
+from typing import Optional
 random.seed(1)
 
 import numpy as np
 import torch
-torch.set_printoptions(profile="full")
-np.set_printoptions(precision=10)
-from torch.utils.data import Dataset, IterableDataset
+from sklearn.preprocessing import OneHotEncoder
+from torch.utils.data import Dataset, IterableDataset, DataLoader
 from Bio import SeqIO
 
-def one_hot(ss):
-    basis = {'A': 0, 'T': 1, 'C': 2, 'G': 3}
+from AsMac_model import AsMac
+
+def load_pretrained(model: str) -> AsMac:
+    embed_dim = 300 # number of kernel sequences
+    kernel_size = 20 # kernel length
+    learning_rate=1e-3 # learning rate
+    net = AsMac(4, embed_dim, kernel_size)
+    net_state_dict = torch.load(model)
+    net.load_state_dict(net_state_dict)
+    return net
+
+def one_hot(ss, basis={'A': 0, 'T': 1, 'C': 2, 'G': 3}):
     feature_list = []
     for s in ss:
         feature = np.zeros([4, len(s)])
@@ -52,13 +62,34 @@ class SeqIteratorDataset(IterableDataset):
     a fast{a|q} sequence to one hot representation and faciliates
     batch loading by a torch DataLoader.
     """
-    def __init__(self, paths: list[str], format: str = 'fasta', gzipped: bool = False):
+    def __init__(self, paths: list[str], # paths to seq files
+                 format: str = 'fasta',  # fast{a|q}
+                 gzipped: bool = False,
+                 alphabet: Optional[str] = None): # used for one-hot encoding
         self.paths = paths
         self.format = format
         self.gzipped = gzipped
+        self.alphabet = alphabet
+        if alphabet:
+            self.encoder = {c: i for i, c in enumerate(alphabet)}
+
+    def one_hot(self, seq: str) -> np.ndarray:
+        """
+        one-hot encoder for single seq.
+        """
+
+        # convert seq to indices (unknown tokens = -1)
+        seq_ind = np.array([self.encoder.get(c, -1) for c in seq])
+        encoded = np.zeros((len(self.encoder), len(seq)))
+
+        # uknown tokens will be all zeros
+        cond = seq_ind >= 0
+        encoded[seq_ind[cond], cond] = 1
+        return  encoded
+        
     def __iter__(self):
         """
-        Use Biopython's fasta iterator
+        Use Biopython's fasta iterator. TODO use pyfastx instead
         """
         # 1. if length of list is 1 do normal stuff
         # 2. else make a chain of iterators
@@ -69,9 +100,25 @@ class SeqIteratorDataset(IterableDataset):
             handle = gzip.open(p, 'rt') if self.gzipped else open(p, 'r')
             S = SeqIO.parse(handle, format=self.format)
             for record in S:
-                yield {'index': i, 'id': record.id,
-                       'seq': str(record.seq), 'file': p}
+                yield {'index': i, 'id': record.id, 'file': p,
+                       'seq': self.one_hot(str(record.seq))
+                       if self.alphabet else str(record.seq)}
                 i += 1
+def makeDataLoader(seqit: SeqIteratorDataset, batch_size: int=64, num_workers: int=64):
+    """
+    Simple factory for dataloader.
+    """
+    return DataLoader(seqit, shuffle=False,
+                      batch_size=batch_size,
+                      num_workers=num_workers,
+                      collate_fn=lambda x: x)
+
+def formatBatchMetadata(batch: list[dict]) -> list[str]:
+    """
+    return metadata of the batch as list of tab delimitted strings.
+    """
+    return ['\t'.join([str(b['index']), b['file'], b['id']])
+            for b in batch]
 
 
 class SeqDataset(Dataset):

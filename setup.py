@@ -3,7 +3,7 @@ from setuptools.extension import Extension
 from Cython.Distutils import build_ext
 
 ## TODO
-# this will install AsMac_model/utility, etc. to the current env
+# this will install AsMac_model/AsMac_utility, etc. to the current env
 # To keep them under some main namespace, we should create another directory
 # and put the relevant files there in the future
 ext_modules=[Extension(
