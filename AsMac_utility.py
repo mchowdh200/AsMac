@@ -16,7 +16,6 @@ import AsMac_model
 def load_pretrained(model: str) -> AsMac_model.AsMac:
     embed_dim = 300 # number of kernel sequences
     kernel_size = 20 # kernel length
-    learning_rate=1e-3 # learning rate
     net = AsMac_model.AsMac(4, embed_dim, kernel_size)
     net_state_dict = torch.load(model)
     net.load_state_dict(net_state_dict)
@@ -88,7 +87,8 @@ class SeqIteratorDataset(IterableDataset):
         
     def __iter__(self):
         """
-        Use Biopython's fasta iterator. TODO use pyfastx instead
+        fasta/fastq: Use Biopython's fasta iterator. TODO use pyfastx instead.
+        bed: format is {genomic pos}TAB{sequence}
         """
         # 1. if length of list is 1 do normal stuff
         # 2. else make a chain of iterators
@@ -97,12 +97,24 @@ class SeqIteratorDataset(IterableDataset):
         i = 0 # used to keep track of seq number an map to seq id
         for p in self.paths:
             handle = gzip.open(p, 'rt') if self.gzipped else open(p, 'r')
-            S = SeqIO.parse(handle, format=self.format)
-            for record in S:
-                yield {'index': i, 'id': record.id, 'file': p,
-                       'seq': self.one_hot(str(record.seq))
-                       if self.alphabet else str(record.seq)}
-                i += 1
+            if self.format == 'fasta' or self.format == 'fastq':
+                S = SeqIO.parse(handle, format=self.format)
+                for record in S:
+                    yield {'index': i, 'id': record.id, 'file': p,
+                        'seq': self.one_hot(str(record.seq))
+                        if self.alphabet else str(record.seq)}
+                    i += 1
+            if self.format == 'bed':
+                # get genomic pos from first 3 cols
+                # seq is last
+                for line in handle:
+                    A = line.rstrip()
+                    interval = A[:3]
+                    seq = A[3]
+                    yield {'interval': '\t'.join(interval),
+                           'seq': self.one_hot(seq)
+                           if self.alphabet else seq}
+                
 def makeDataLoader(seqit: SeqIteratorDataset, batch_size: int=64):
     """
     Simple factory for dataloader.
