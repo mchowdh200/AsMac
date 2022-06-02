@@ -108,7 +108,7 @@ class SeqIteratorDataset(IterableDataset):
                 # get genomic pos from first 3 cols
                 # seq is last
                 for line in handle:
-                    A = line.rstrip()
+                    A = line.rstrip().split()
                     interval = A[:3]
                     seq = A[3]
                     yield {'interval': '\t'.join(interval),
@@ -126,7 +126,7 @@ def makeDataLoader(seqit: SeqIteratorDataset, batch_size: int=64):
 
 def formatBatchMetadata(batch: list[dict]) -> list[str]:
     """
-    return metadata of the batch as list of tab delimitted strings.
+    return metadata of the batch as list of tab delimitted strings (fasta/fastq only)
     """
     return ['\t'.join([str(b['index']), b['file'], b['id']])
             for b in batch]
